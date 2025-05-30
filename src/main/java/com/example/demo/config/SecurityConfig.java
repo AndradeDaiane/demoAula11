@@ -1,43 +1,85 @@
 package com.example.demo.config;
+// Pacote da configuração de segurança
 
-// Importa as anotações e classes necessárias do Spring Security
+// Importações necessárias do Spring Security para configuração de segurança
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity;
+import org.springframework.security.core.userdetails.User;
+import org.springframework.security.core.userdetails.UserDetails;
+import org.springframework.security.core.userdetails.UserDetailsService;
+import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
+import org.springframework.security.crypto.password.PasswordEncoder;
+import org.springframework.security.provisioning.InMemoryUserDetailsManager;
 import org.springframework.security.web.SecurityFilterChain;
 
-// Indica que esta classe é uma configuração do Spring
+// Indica que esta classe contém configurações do Spring
 @Configuration
-// Habilita a configuração de segurança web do Spring Security
+// Ativa as configurações de segurança web do Spring Security
 @EnableWebSecurity
 public class SecurityConfig {
 
-    // Para definir um usuário e senha padrão, adicione um bean de UserDetailsService ou configure no application.properties:
-    // spring.security.user.name=usuario
-    // spring.security.user.password=senha
-    // Define um bean do tipo SecurityFilterChain, responsável por configurar a cadeia de filtros de segurança
+    // Este método define a cadeia de filtros de segurança da aplicação.
+    // Ele configura como as requisições HTTP serão protegidas.
     @Bean
     public SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
         http
-                // Desabilita a proteção CSRF (Cross-Site Request Forgery) para facilitar testes em ferramentas como Postman
+                // Desabilita a proteção contra CSRF (Cross-Site Request Forgery).
+                // Útil para facilitar testes via ferramentas como Postman, mas não recomendado em produção.
                 .csrf(csrf -> csrf.disable())
-                // Configura as regras de autorização para as requisições HTTP
+                // Define as regras de autorização para as requisições HTTP.
                 .authorizeHttpRequests(auth -> auth
-                // Exige autenticação para qualquer requisição feita à aplicação
+                // Exige autenticação para qualquer requisição feita à aplicação.
                 .anyRequest().authenticated()
                 )
-                // Habilita o formulário de login personalizado em /login (login.html)
+                // Habilita o formulário de login customizado.
                 .formLogin(form -> form
-                .loginPage("/login") // Define a página de login customizada (caso queira o default, pode remover esta linha)
-                .permitAll() // Permite que todos acessem a página de login sem precisar estar autenticado
+                // Define a página de login customizada ("/login").
+                .loginPage("/login")
+                // Permite que todos acessem a página de login sem autenticação.
+                .permitAll()
                 )
-                // Habilita autenticação HTTP Basic (usuário e senha via cabeçalho HTTP)
+                // Habilita autenticação HTTP Basic (usuário e senha via cabeçalho HTTP).
                 .httpBasic(_ -> {
-                }); // Nova forma recomendada para habilitar HTTP Basic
+                }); // Forma recomendada para habilitar HTTP Basic
 
-        // Retorna o objeto configurado de SecurityFilterChain
+        // Retorna o objeto configurado de SecurityFilterChain.
         return http.build();
+    }
+
+    // Bean para o PasswordEncoder usando BCrypt.
+    // O PasswordEncoder é responsável por codificar as senhas dos usuários.
+    // BCrypt é um algoritmo de hash seguro recomendado para senhas.
+    @Bean
+    public PasswordEncoder passwordEncoder() {
+        return new BCryptPasswordEncoder();
+    }
+
+    // Este método define os usuários que poderão acessar a aplicação.
+    // Os usuários são armazenados em memória (InMemoryUserDetailsManager).
+    // O PasswordEncoder é injetado para garantir que as senhas sejam codificadas corretamente.
+    @Bean
+    public UserDetailsService userDetailsService(PasswordEncoder encoder) {
+        // Cria um usuário chamado "user" com a senha "senha" e papel "USER".
+        // A senha é codificada usando o encoder (BCrypt).
+        UserDetails user = User.builder()
+                .username("user")
+                .password(encoder.encode("senha"))
+                .roles("USER")
+                .build();
+
+        // Cria um usuário chamado "admin" com a senha "senha" e papel "ADMIN".
+        // Também utiliza o encoder para codificar a senha.
+        UserDetails admin = User.builder()
+                .username("admin")
+                .password(encoder.encode("senha"))
+                .roles("ADMIN")
+                .build();
+
+        // Retorna um gerenciador de usuários em memória contendo ambos os usuários.
+        // Isso permite autenticação sem necessidade de banco de dados.
+        return new InMemoryUserDetailsManager(user, admin);
     }
 
 }
