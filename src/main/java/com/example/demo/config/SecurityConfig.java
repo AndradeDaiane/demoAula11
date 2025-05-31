@@ -41,7 +41,7 @@ public class SecurityConfig {
                 .permitAll()
                 )
                 // Habilita autenticação HTTP Basic (usuário e senha via cabeçalho HTTP).
-                .httpBasic(_ -> {
+                .httpBasic(httpBasicConfigurer -> {
                 }); // Forma recomendada para habilitar HTTP Basic
 
         // Retorna o objeto configurado de SecurityFilterChain.
